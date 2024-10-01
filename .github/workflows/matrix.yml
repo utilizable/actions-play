@@ -4,39 +4,18 @@ on:
   workflow_dispatch:
 
 jobs:
-  # -----------------
-  # Prepare: Set build arguments
-  #
-  prepare:
+  job1:
     runs-on: ubuntu-latest
     outputs:
-      buildargs: ${{ steps.set-args.outputs.BUILD_ARGS }}  # Output from this step
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - name: Set Build Arguments
-        id: set-args
-        run: |
-          # Define the build arguments as a JSON string
-          build_args='[
-            {
-              "version": "14"
-            },
-            {
-              "version": "16"
-            }
-          ]'
-          echo "::set-output name=BUILD_ARGS::$build_args"
-
-  # -----------------
-  # Build Job: Use matrix strategy
-  #
-  build:
+    - id: set-matrix
+      run: echo "::set-output name=matrix::{\"include\":[{\"project\":\"foo\",\"config\":\"Debug\"},{\"project\":\"bar\",\"config\":\"Release\"}]}"
+  job2:
+    needs: job1
     runs-on: ubuntu-latest
-    needs: prepare  # This job depends on the prepare job
     strategy:
-      matrix:
-        config: ${{ fromJson(needs.prepare.outputs.buildargs) }}  # Use output from prepare
+      matrix: ${{fromJson(needs.job1.outputs.matrix)}}
     steps:
-      - name: Display Node Version
-        run: |
-          echo "Building with Node version: ${{ matrix.config.version }}"
-          # Here you can add commands to build your project with the specified Node version
+    - run: echo ${{ matrix.project }}
+    - run: echo ${{ matrix.config }}
